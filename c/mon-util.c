@@ -24,13 +24,6 @@
 */
 #include "monitor.h"
 
-char *skipspaces(char *p)
-{
-	while ( m_isspace(*p) )
-		p++;
-	return(p);
-}
-
 int char2hex(char c)
 {
 	if ( c >= '0' && c <= '9' )

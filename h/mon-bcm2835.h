@@ -128,7 +128,7 @@ struct bcm2835_gpio_s
 
 #define bcm2835_gpio	((bcm2835_gpio_t *)(BCM2835_PBASE+0x200000))[0]
 
-void bcm2835_gpio_pinconfig(uint32_t pin, uint32_t fsel, uint32_t pud);
+extern void bcm2835_gpio_pinconfig(uint32_t pin, uint32_t fsel, uint32_t pud);
 
 static inline void bcm2835_gpio_pin_set(uint32_t pin)
 {
@@ -192,7 +192,7 @@ struct bcm2835_uart_s
 
 #define bcm2835_uart	((bcm2835_uart_t *)(BCM2835_PBASE+0x215040))[0]
 
-void bcm2835_uart_init(uint32_t baud, uint32_t bits, uint32_t parity);
+extern void bcm2835_uart_init(uint32_t baud, uint32_t bits, uint32_t parity);
 
 #define BCM2835_IER_TxInt		0x02
 #define BCM2835_IER_RxInt		0x01

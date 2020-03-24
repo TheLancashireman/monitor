@@ -85,25 +85,11 @@ typedef void (*vfuncv_t)(void);
 
 #define go(a)			((*(vfuncv_t)(a))())
 
-void monitor(char *prompt);
-int process_s_record(char *line, pokefunc_t _poke);
-int mprintf(char *fmt, ...);
-char *mgets(char *buf, int max);
-char *skipspaces(char *p);
-int char2hex(char c);
-maxword_t gethex(char **pp, int max);
+extern void monitor(char *prompt);
+extern int process_s_record(char *line, pokefunc_t _poke);
+extern int char2hex(char c);
+extern maxword_t gethex(char **pp, int max);
 
-static inline int m_strlen(const char *str)
-{
-	const char *s = str;
-	int len = 0;
-	while ( *s != '\0' )
-	{
-		len++;
-		s++;
-	}
-	return len;
-}
 
 /* Names for ASCII control codes
 */
@@ -180,5 +166,25 @@ static inline int m_isprint(int c)
 {
 	return (c >= ' ' && c < 0x7f);
 }
+
+static inline int m_strlen(const char *str)
+{
+	const char *s = str;
+	int len = 0;
+	while ( *s != '\0' )
+	{
+		len++;
+		s++;
+	}
+	return len;
+}
+
+static inline char *m_skipspaces(char *p)
+{
+	while ( m_isspace(*p) )
+		p++;
+	return(p);
+}
+
 
 #endif

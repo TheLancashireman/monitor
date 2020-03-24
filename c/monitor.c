@@ -54,6 +54,7 @@
  *
 */
 #include "monitor.h"
+#include "mon-stdio.h"
 
 /*	Messages etc. */
 const char what[]		= "What?";
@@ -83,9 +84,9 @@ void monitor(char *prompt)
 
 	for (;;)
 	{
-		mprintf("%s", prompt);
-		mgets(line, MAXLINE);
-		p = skipspaces(line);
+		m_printf("%s", prompt);
+		m_gets(line, MAXLINE);
+		p = m_skipspaces(line);
 		switch ( *p )
 		{
 		case '\0':
@@ -100,14 +101,14 @@ void monitor(char *prompt)
 				break;
 
 			case SREC_EOF:
-				mprintf("End of S-record file\n");
+				m_printf("End of S-record file\n");
 				break;
 
 			case SREC_BADTYP:
 			case SREC_BADLEN:
 			case SREC_NONHEX:
 			case SREC_BADCK:
-				mprintf("Bad S-record: \"%s\"\n", line);
+				m_printf("Bad S-record: \"%s\"\n", line);
 				break;
 
 			}
@@ -155,7 +156,7 @@ void monitor(char *prompt)
 #endif
 
 		default:
-			mprintf("%s\n", what);
+			m_printf("%s\n", what);
 			break;
 		}
 	}
@@ -166,43 +167,43 @@ static void word_op(int s, char *p)
 	memaddr_t a;
 	uint64_t v;
 
-	p = skipspaces(p);
+	p = m_skipspaces(p);
 	a = gethex(&p, sizeof(memaddr_t)*2);
 	if ( p == NULL )
 	{
-		mprintf("%s\n", how);
+		m_printf("%s\n", how);
 	}
 	else
 	{
-		p = skipspaces(p);
+		p = m_skipspaces(p);
 		if ( *p == '\0' )
 		{
 			switch ( s )
 			{
 			case 1:
-				mprintf("%08x = %02x\n", a, peek8(a));
+				m_printf("%08x = %02x\n", a, peek8(a));
 				break;
 			case 2:
-				mprintf("%08x = %04x\n", a, peek16(a));
+				m_printf("%08x = %04x\n", a, peek16(a));
 				break;
 			case 4:
-				mprintf("%08x = %08x\n", a, peek32(a));
+				m_printf("%08x = %08x\n", a, peek32(a));
 				break;
 			case 8:
 				v = peek64(a);
-				mprintf("%08x = %08x%08x\n", a, (uint32_t)(v>>32), (uint32_t)(v&0xffffffff));
+				m_printf("%08x = %08x%08x\n", a, (uint32_t)(v>>32), (uint32_t)(v&0xffffffff));
 				break;
 			}
 		}
 		else
 		if ( *p == '=' )
 		{
-			p = skipspaces(p+1);
+			p = m_skipspaces(p+1);
 			v = gethex(&p, s*2);
 			if ( p == NULL ||
-				 *(p = skipspaces(p)) != '\0' )
+				 *(p = m_skipspaces(p)) != '\0' )
 			{
-				mprintf("%s\n", how);
+				m_printf("%s\n", how);
 			}
 			else
 			{
@@ -234,70 +235,70 @@ void dump(char *p)
 	int i;
 	int c;
 
-	p = skipspaces(p);
+	p = m_skipspaces(p);
 	a = gethex(&p, sizeof(memaddr_t)*2);
 
 	if ( p == NULL )
 	{
-		mprintf("%s\n", how);
+		m_printf("%s\n", how);
 		return;
 	}
 
-	p = skipspaces(p);
+	p = m_skipspaces(p);
 	if ( *p == ',' )
 	{
-		p = skipspaces(p+1);
+		p = m_skipspaces(p+1);
 		l = gethex(&p, 4);
 		if ( p == NULL )
 		{
-			mprintf("%s\n", how);
+			m_printf("%s\n", how);
 			return;
 		}
-		p = skipspaces(p);
+		p = m_skipspaces(p);
 		if ( *p == ',' )
 		{
-			p = skipspaces(p+1);
+			p = m_skipspaces(p+1);
 			s = gethex(&p, 1);
 			if ( p == NULL )
 			{
-				mprintf("%s\n", how);
+				m_printf("%s\n", how);
 				return;
 			}
-			p = skipspaces(p);
+			p = m_skipspaces(p);
 		}
 	}
 
 	if ( *p != '\0' )
 	{
-		mprintf("%s\n", how);
+		m_printf("%s\n", how);
 		return;
 	}
 
 	if ( !(s == 1 || s == 2 || s == 4) )
 	{
-		mprintf("%s\n", sorry);
+		m_printf("%s\n", sorry);
 		return;
 	}
 
 	while ( l > 0 )
 	{
-		mprintf("%08x", a);
+		m_printf("%08x", a);
 		i = 16;
 		ca = a;
 		while ( i > 0 && l > 0 )
 		{
 			if ( s == 1 && i == 8 )
-				mprintf(" -");
+				m_printf(" -");
 			switch ( s )
 			{
 			case 1:
-				mprintf(" %02x", peek8(a));
+				m_printf(" %02x", peek8(a));
 				break;
 			case 2:
-				mprintf(" %04x", peek16(a));
+				m_printf(" %04x", peek16(a));
 				break;
 			case 4:
-				mprintf(" %08x", peek32(a));
+				m_printf(" %08x", peek32(a));
 				break;
 			}
 			a += s;
@@ -306,16 +307,16 @@ void dump(char *p)
 		}
 		if ( s == 1 )
 		{
-			mprintf("   ");
+			m_printf("   ");
 			while ( ca < a )
 			{
 				c = peek8(ca++);
 				if ( c <= 0x20 || c >= 0x7f )
 					c = '.';
-				mprintf("%c", c);
+				m_printf("%c", c);
 			}
 		}
-		mprintf("\n");
+		m_printf("\n");
 	}
 }
 
@@ -328,12 +329,12 @@ void go_op(char *p)
 {
 	memaddr_t a;
 
-	p = skipspaces(p);
+	p = m_skipspaces(p);
 	a = gethex(&p, sizeof(memaddr_t)*2);
 
 	if ( p == NULL )
 	{
-		mprintf("%s\n", how);
+		m_printf("%s\n", how);
 	}
 	else
 	{

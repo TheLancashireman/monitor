@@ -18,6 +18,12 @@
 #include "mon-bcm2835.h"
 
 
+/* bcm2835_uart_init() - initialise the UART
+ *
+ * Initialize to the selected baud rate, parity and bits.
+ * At the moment, baud and parity must be 115200 and none (0).
+ * Bits can be 7 or 8
+*/
 void bcm2835_uart_init(uint32_t baud, uint32_t bits, uint32_t parity)
 {
 	if ( baud == 115200 &&			/* ToDo: Other bitrates */
@@ -41,4 +47,40 @@ void bcm2835_uart_init(uint32_t baud, uint32_t bits, uint32_t parity)
 	{
 		bcm2835_disable(BCM2835_AUX_uart);
 	}
+}
+
+/* bcm2835_gpio_pinconfig() - set up GPIO pin
+ *
+ * Select input, output or alternative functions
+ * Set open, pull-down or pull-up.
+*/
+void bcm2835_gpio_pinconfig(uint32_t pin, uint32_t fsel, uint32_t pud)
+{
+	int index, shift;
+	uint32_t mask, val;
+	volatile int delay;
+
+	index = pin/10;		/* fsel: 3 bits per field, 10 fields per register */
+	shift = (pin%10) * 3;
+	mask = 0x7 << shift;
+	val = fsel << shift;
+
+	bcm2835_gpio.fsel[index] = (bcm2835_gpio.fsel[index] & ~mask) | val;
+
+	index = pin/32;		/* pudclk: 1 bit per field, 32 fields per register */
+	shift = (pin%32);
+	mask = 0x1 << shift;
+
+	bcm2835_gpio.pud = pud;
+	for ( delay = 0; delay < 150; delay++ )
+	{
+		/* Wait for 150 cycles setup time for the control signal */
+	}
+	bcm2835_gpio.pudclk[index] |= mask;
+	for ( delay = 0; delay < 150; delay++ )
+	{ 
+		/* Wait for 150 cycles hold time for the control signal */
+	}
+	bcm2835_gpio.pudclk[index] &= ~mask;
+	bcm2835_gpio.pud = 0;
 }

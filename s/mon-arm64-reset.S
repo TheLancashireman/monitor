@@ -1,24 +1,24 @@
-/*	dv-reset.S - ARM64 startup code for davroska
+/*	mon-arm64-reset.S - ARM64 startup code for monitor
  *
- *	Copyright 2019 David Haworth
+ *	Copyright David Haworth
  *
- *	This file is part of davros.
+ *	This file is part of XXXX.
  *
- *	davros is free software: you can redistribute it and/or modify
+ *	XXXX is free software: you can redistribute it and/or modify
  *	it under the terms of the GNU General Public License as published by
  *	the Free Software Foundation, either version 3 of the License, or
  *	(at your option) any later version.
  *
- *	davros is distributed in the hope that it will be useful,
+ *	XXXX is distributed in the hope that it will be useful,
  *	but WITHOUT ANY WARRANTY; without even the implied warranty of
  *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *	GNU General Public License for more details.
  *
  *	You should have received a copy of the GNU General Public License
- *	along with davros.  If not, see <http://www.gnu.org/licenses/>.
+ *	along with XXXX.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* dv_reset() - startup code after reset
+/* mon_reset() - startup code after reset
  *
  * This code is placed at the reset location, wherever that happens to be.
  *
@@ -26,29 +26,29 @@
  *	kernel_old=1
  * in config.txt to load the image at 0. Also use
  *	arm_control=0x200				(start in ARM64 mode)
- *	disable_commandline_tags=1		(not sure, but davros-related images don't have command lines)
+ *	disable_commandline_tags=1		(not sure, but bare-metal images don't have command lines)
  * There might be more modern versions of these config options.
  * 
- * Initialise processor then call dv_board_start on core 0.
+ * Initialise processor then call core0_start on core 0.
  * Cores 1, 2 and 3 loop forever
 */
-	.globl	dv_reset
+	.globl	mon_reset
 
-	.extern	dv_board_start
-	.extern	dv_core1_start
-	.extern	dv_core2_start
-	.extern	dv_core3_start
+	.extern	core0_start
+	.extern	core1_start
+	.extern	core2_start
+	.extern	core3_start
 
-	.extern dv_c0_initialsp
-	.extern dv_c1_initialsp
-	.extern dv_c2_initialsp
-	.extern dv_c3_initialsp
+	.extern c0_initialsp
+	.extern c1_initialsp
+	.extern c2_initialsp
+	.extern c3_initialsp
 
 	.section	.reset, "ax"
 
 /* This is where the bootloader jumps to.
- * Insert a few dummy instructions so that, if the bootloader loads at zero, dv_reset is not at zero.
- * This allows other cores to be released at dv_reset.
+ * Insert a few dummy instructions so that, if the bootloader loads at zero, mon_reset is not at zero.
+ * This allows other cores to be released at mon_reset.
 */
 	nop
 	nop
@@ -57,7 +57,7 @@
 
 /* This is where we start cores 1, 2 and 3 from the monitor. The address has to be non-zero
 */
-dv_reset:
+mon_reset:
 	msr		DAIFSet, 0xf	/* Disable interrupts and exceptions */
 
 /* Clear all registers
@@ -146,44 +146,44 @@ dv_reset:
 stop:								/* Other cores (if any) wait here forever - the demo doesn't need them */
 	b		stop
 
-/* Core 0 - go to dv_board_start
+/* Core 0 - go to core0_start
 */
 core_zero:
-	ldr		x0, dv_c0_sp_addr		/* Load the kernel stack pointer */
+	ldr		x0, c0_sp_addr			/* Load the kernel stack pointer */
 	ldr		x1, [x0]
 	mov		sp, x1
-	bl		dv_board_start
-	b		dv_reset				/* if the board start function returns, rinse and repeat. */
+	bl		core0_start
+	b		mon_reset				/* if the core start function returns, rinse and repeat. */
 
-/* Cores 1, 2 and 3 - go to dv_corex_start
+/* Cores 1, 2 and 3 - go to corex_start
 */
 core_one:
-	ldr		x0, dv_c1_sp_addr		/* Load the core 1 stack pointer */
+	ldr		x0, c1_sp_addr			/* Load the core 1 stack pointer */
 	ldr		x1, [x0]
 	mov		sp, x1
-	bl		dv_core1_start
-	b		dv_reset				/* if the board start function returns, rinse and repeat. */
+	bl		core1_start
+	b		mon_reset				/* if the core start function returns, rinse and repeat. */
 
 core_two:
-	ldr		x0, dv_c2_sp_addr		/* Load the core 2 stack pointer */
+	ldr		x0, c2_sp_addr			/* Load the core 2 stack pointer */
 	ldr		x1, [x0]
 	mov		sp, x1
-	bl		dv_core2_start
-	b		dv_reset				/* if the board start function returns, rinse and repeat. */
+	bl		core2_start
+	b		mon_reset				/* if the core start function returns, rinse and repeat. */
 
 core_three:
-	ldr		x0, dv_c3_sp_addr		/* Load the core 3 stack pointer */
+	ldr		x0, c3_sp_addr			/* Load the core 3 stack pointer */
 	ldr		x1, [x0]
 	mov		sp, x1
-	bl		dv_core3_start
-	b		dv_reset				/* if the board start function returns, rinse and repeat. */
+	bl		core3_start
+	b		mon_reset				/* if the core start function returns, rinse and repeat. */
 
 	.balign	8
-dv_c0_sp_addr:
-	.quad	dv_c0_initialsp			/* This is the address of where the core 0 stack pointer is held. */
-dv_c1_sp_addr:
-	.quad	dv_c1_initialsp			/* This is the address of where the core 1 stack pointer is held. */
-dv_c2_sp_addr:
-	.quad	dv_c2_initialsp			/* This is the address of where the core 2 stack pointer is held. */
-dv_c3_sp_addr:
-	.quad	dv_c3_initialsp			/* This is the address of where the core 3 stack pointer is held. */
+c0_sp_addr:
+	.quad	c0_initialsp			/* This is the address of where the core 0 stack pointer is held. */
+c1_sp_addr:
+	.quad	c1_initialsp			/* This is the address of where the core 1 stack pointer is held. */
+c2_sp_addr:
+	.quad	c2_initialsp			/* This is the address of where the core 2 stack pointer is held. */
+c3_sp_addr:
+	.quad	c3_initialsp			/* This is the address of where the core 3 stack pointer is held. */

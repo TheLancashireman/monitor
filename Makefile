@@ -35,10 +35,10 @@ ifeq ($(BOARD), pi3-arm64)
 MON_BOARD	?=	MON_PI3_ARM64
 GNU_D		?=	/data1/gnu/gcc-linaro-7.4.1-2019.02-x86_64_aarch64-elf
 
-GCC			?=	$(GNU_D)/bin/aarch64-elf-gcc
-LD			?=	$(GNU_D)/bin/aarch64-elf-ld
-OBJCOPY		?=	$(GNU_D)/bin/aarch64-elf-objcopy
-LDLIB_D		?=	$(GNU_D)/aarch64-elf/libc/usr/lib/
+CC			:=	$(GNU_D)/bin/aarch64-elf-gcc
+LD			:=	$(GNU_D)/bin/aarch64-elf-ld
+OBJCOPY		:=	$(GNU_D)/bin/aarch64-elf-objcopy
+LDLIB_D		:=	$(GNU_D)/aarch64-elf/libc/usr/lib/
 HIGH_ADDR	?=	0x20000000
 
 ENTRY	?=	mon_reset
@@ -50,15 +50,17 @@ else
 MON_BOARD	?=	MON_PI_ZERO
 GNU_D		?=	/data1/gnu/gcc-linaro-6.3.1-2017.02-x86_64_arm-eabi
 
-GCC			?=	$(GNU_D)/bin/arm-eabi-gcc
-LD			?=	$(GNU_D)/bin/arm-eabi-ld
-OBJCOPY		?=	$(GNU_D)/bin/arm-eabi-objcopy
-LDLIB_D		?=	$(GNU_D)/arm-eabi/libc/usr/lib/
+CC			:=	$(GNU_D)/bin/arm-eabi-gcc
+LD			:=	$(GNU_D)/bin/arm-eabi-ld
+OBJCOPY		:=	$(GNU_D)/bin/arm-eabi-objcopy
+LDLIB_D		:=	$(GNU_D)/arm-eabi/libc/usr/lib/
 HIGH_ADDR	?=	0x18000000
 
 ENTRY	?=	mon_trap_reset
 
 endif
+
+MON_MAXSIZE	?=	65536
 
 BIN_D	= bin
 OBJ_D	= obj
@@ -79,6 +81,7 @@ MONITOR_OBJS	+= $(OBJ_D)/monitor.o
 MONITOR_OBJS	+= $(OBJ_D)/mon-srec.o
 MONITOR_OBJS	+= $(OBJ_D)/mon-stdio.o
 MONITOR_OBJS	+= $(OBJ_D)/mon-util.o
+MONITOR_OBJS	+= $(OBJ_D)/mon-bcm2835.o
 MONITOR_OBJS	+= $(OBJ_D)/board-start.o
 
 # The loader code
@@ -105,8 +108,8 @@ all:		$(OBJ_D) $(BIN_D) $(BIN_D)/loader.bin
 $(BIN_D)/loader.bin:		$(BIN_D)/loader.elf
 	$(OBJCOPY) $< -O binary $@
 
-$(BIN_D)/loader.elf:		$(LOADER_OBJS) ldscript/monitor-low.ldscript
-	$(LD) -o $@ -T ldscript/monitor-low.ldscript $(LD_OBJS) $(LD_LIB) $(LD_OPT)
+$(BIN_D)/loader.elf:		$(LOADER_OBJS) l/monitor-low.ldscript
+	$(LD) -o $@ -T l/monitor-low.ldscript $(LD_OBJS) $(LD_LIB) $(LD_OPT)
 
 $(BIN_D)/loadbin.c:		$(BIN_D)/monitor.bin
 	echo "const char bin_name[] = \"monitor.bin\";" > $@
@@ -121,15 +124,15 @@ $(BIN_D)/loadbin.c:		$(BIN_D)/monitor.bin
 $(BIN_D)/monitor.bin:	$(BIN_D)/monitor.elf
 	$(OBJCOPY) $< -O binary $@
 
-$(BIN_D)/monitor.elf:	$(MONITOR_OBJS) ldscript/monitor-$(HIGH_ADDR).ldscript
-	$(LD) -o $@ -T ldscript/monitor-$(HIGH_ADDR).ldscript $(MONITOR_OBJS) $(LD_LIB) $(LD_OPT)
+$(BIN_D)/monitor.elf:	$(MONITOR_OBJS) l/monitor-$(HIGH_ADDR).ldscript
+	$(LD) -o $@ -T l/monitor-$(HIGH_ADDR).ldscript $(MONITOR_OBJS) $(LD_LIB) $(LD_OPT)
 
 # General rules
 $(OBJ_D)/%.o:  %.c
-	$(GCC) $(CC_OPT) -o $@ -c $<
+	$(CC) $(CC_OPT) -o $@ -c $<
 
 $(OBJ_D)/%.o:  %.S
-	$(GCC) $(CC_OPT) -o $@ -c $<
+	$(CC) $(CC_OPT) -o $@ -c $<
 
 $(BIN_D):
 	mkdir -p bin

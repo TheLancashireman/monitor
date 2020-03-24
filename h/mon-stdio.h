@@ -27,7 +27,8 @@
 
 #include "monitor.h"
 
-int m_printf(char *fmt, ...);
+extern int m_printf(char *fmt, ...);
+extern char *m_gets(char *buf, int max);
 
 static inline char m_readchar(void)
 {

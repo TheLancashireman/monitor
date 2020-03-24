@@ -21,7 +21,11 @@
 #include "mon-bcm2835.h"
 #include "mon-stdio.h"
 
-void board_start(unsigned long x0, unsigned long x1, unsigned long x2, unsigned long x3)
+typedef int (*fp_t)(int);
+
+volatile fp_t core_start_addr[4];
+
+void core0_start(unsigned long x0, unsigned long x1, unsigned long x2, unsigned long x3)
 {
     /* Enable the UART, then initialise it.
     */
@@ -38,4 +42,33 @@ void board_start(unsigned long x0, unsigned long x1, unsigned long x2, unsigned 
     m_printf("  x3 = 0x%08x%08x\n", (uint32_t)(x3>>32), (uint32_t)(x3&0xffffffff));
 
 	monitor("mon > ");
+}
+
+void core_start(int c)
+{
+	core_start_addr[c] = NULL;
+
+	for (;;)
+	{
+		if ( core_start_addr[c] != NULL )
+		{
+			int r = core_start_addr[c](c);
+			m_printf("Core %d: start function returned %d\n", c, r);
+		}
+	}
+}
+
+void core1_start(void)
+{
+	core_start(1);
+}
+
+void core2_start(void)
+{
+	core_start(2);
+}
+
+void core3_start(void)
+{
+	core_start(3);
 }
