@@ -43,7 +43,8 @@ HIGH_ADDR	?=	0x20000000
 
 ENTRY	?=	mon_reset
 
-MONITOR_OBJS	+= $(OBJ_D)/mon-arm64-reset.o
+BOARD_OBJS	+= $(OBJ_D)/mon-arm64-reset.o
+BOARD_OBJS	+= $(OBJ_D)/mon-bcm2835.o
 
 else
 
@@ -55,6 +56,9 @@ LD			:=	$(GNU_D)/bin/arm-eabi-ld
 OBJCOPY		:=	$(GNU_D)/bin/arm-eabi-objcopy
 LDLIB_D		:=	$(GNU_D)/arm-eabi/libc/usr/lib/
 HIGH_ADDR	?=	0x18000000
+
+BOARD_OBJS	+= $(OBJ_D)/mon-arm-reset.o
+BOARD_OBJS	+= $(OBJ_D)/mon-bcm2835.o
 
 ENTRY	?=	mon_trap_reset
 
@@ -77,39 +81,41 @@ LD_OPT		+=	-L $(LDLIB_D)
 LD_OPT		+=	-lc
 
 # The monitor code
+MONITOR_OBJS	+= $(BOARD_OBJS)
 MONITOR_OBJS	+= $(OBJ_D)/monitor.o
 MONITOR_OBJS	+= $(OBJ_D)/mon-srec.o
 MONITOR_OBJS	+= $(OBJ_D)/mon-stdio.o
 MONITOR_OBJS	+= $(OBJ_D)/mon-util.o
-MONITOR_OBJS	+= $(OBJ_D)/mon-bcm2835.o
 MONITOR_OBJS	+= $(OBJ_D)/board-start.o
 
 # The loader code
-LOADER_OBJS	+= $(OBJ_D)/loadbin.o
-
+LOADER_OBJS		+= $(BOARD_OBJS)
+LOADER_OBJS		+= $(OBJ_D)/loadbin.o
+LOADER_OBJS		+= $(OBJ_D)/loadhigh.o
+LOADER_OBJS		+= $(OBJ_D)/mon-stdio.o
 
 VPATH		+= 	bin
 VPATH 		+=	s
 VPATH 		+=	c
 
-.PHONY:		default all help clean install srec mon
+.PHONY:		default loader help clean install srec mon mon-low
 
-mon:		$(BIN_D) $(OBJ_D) $(BIN_D)/monitor.bin
-
-default:	all
+default:	loader
 
 clean:
 	-rm -rf $(OBJ_D) $(BIN_D)
 
-all:		$(OBJ_D) $(BIN_D) $(BIN_D)/loader.bin
+mon:		$(BIN_D) $(OBJ_D) $(BIN_D)/monitor.bin
+
+loader:		$(OBJ_D) $(BIN_D) $(BIN_D)/loader.bin
 
 # Rules for the loader that loads the monitor into high memory
 # The loader contains a binary image of the monitor.
 $(BIN_D)/loader.bin:		$(BIN_D)/loader.elf
 	$(OBJCOPY) $< -O binary $@
 
-$(BIN_D)/loader.elf:		$(LOADER_OBJS) l/monitor-low.ldscript
-	$(LD) -o $@ -T l/monitor-low.ldscript $(LD_OBJS) $(LD_LIB) $(LD_OPT)
+$(BIN_D)/loader.elf:		$(LOADER_OBJS) l/ld-low.ldscript
+	$(LD) -o $@ -T l/ld-low.ldscript $(LOADER_OBJS) $(LD_LIB) $(LD_OPT)
 
 $(BIN_D)/loadbin.c:		$(BIN_D)/monitor.bin
 	echo "const char bin_name[] = \"monitor.bin\";" > $@
@@ -124,8 +130,8 @@ $(BIN_D)/loadbin.c:		$(BIN_D)/monitor.bin
 $(BIN_D)/monitor.bin:	$(BIN_D)/monitor.elf
 	$(OBJCOPY) $< -O binary $@
 
-$(BIN_D)/monitor.elf:	$(MONITOR_OBJS) l/monitor-$(HIGH_ADDR).ldscript
-	$(LD) -o $@ -T l/monitor-$(HIGH_ADDR).ldscript $(MONITOR_OBJS) $(LD_LIB) $(LD_OPT)
+$(BIN_D)/monitor.elf:	$(MONITOR_OBJS) l/ld-$(HIGH_ADDR).ldscript
+	$(LD) -o $@ -T l/ld-$(HIGH_ADDR).ldscript $(MONITOR_OBJS) $(LD_LIB) $(LD_OPT)
 
 # General rules
 $(OBJ_D)/%.o:  %.c
@@ -141,5 +147,5 @@ $(OBJ_D):
 	mkdir -p obj
 
 # For testing with an old version of the monitor already installed and running.
-srec:		all
+srec:		loader
 	$(OBJCOPY) bin/loader.elf -O srec --srec-forceS3 /dev/stdout | dos2unix | egrep -v '^S3..........00*..$$' > bin/loader.srec

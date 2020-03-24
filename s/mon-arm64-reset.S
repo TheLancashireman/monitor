@@ -33,6 +33,7 @@
  * Cores 1, 2 and 3 loop forever
 */
 	.globl	mon_reset
+	.globl	mon_startaddr
 
 	.extern	core0_start
 	.extern	core1_start
@@ -50,6 +51,7 @@
  * Insert a few dummy instructions so that, if the bootloader loads at zero, mon_reset is not at zero.
  * This allows other cores to be released at mon_reset.
 */
+mon_startaddr:
 	nop
 	nop
 	nop

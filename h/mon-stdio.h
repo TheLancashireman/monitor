@@ -26,19 +26,19 @@
 #define mon_stdio_h
 
 #include "monitor.h"
+#include "mon-bcm2835.h"
 
 extern int m_printf(char *fmt, ...);
 extern char *m_gets(char *buf, int max);
 
 static inline char m_readchar(void)
 {
-	/* ToDo */
-	return 0;
+	return (char)bcm2835_uart_getc();
 }
 
 static inline void m_writechar(char c)
 {
-	/* ToDo */
+	bcm2835_uart_putc((int)c);
 }
 
 #endif

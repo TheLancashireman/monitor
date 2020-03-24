@@ -18,15 +18,18 @@
  *	Boston, MA 02111-1307, USA.
 */
 #include "monitor.h"
-#include "mon-bcm2835.h"
 #include "mon-stdio.h"
+
+extern uint64_t mon_startaddr, bss_start, bss_end, null_addr;
 
 typedef int (*fp_t)(int);
 
 volatile fp_t core_start_addr[4];
 
-void core0_start(unsigned long x0, unsigned long x1, unsigned long x2, unsigned long x3)
+void core0_start(void)
 {
+	uint64_t *p;
+
     /* Enable the UART, then initialise it.
     */
     bcm2835_enable(BCM2835_AUX_uart);
@@ -34,12 +37,22 @@ void core0_start(unsigned long x0, unsigned long x1, unsigned long x2, unsigned 
 
     /* Friendly greeting.
     */
-    m_printf("Davros monitor version 0.2\n");
-    m_printf("Startup parameters:\n");
-    m_printf("  x0 = 0x%08x%08x\n", (uint32_t)(x0>>32), (uint32_t)(x0&0xffffffff));
-    m_printf("  x1 = 0x%08x%08x\n", (uint32_t)(x1>>32), (uint32_t)(x1&0xffffffff));
-    m_printf("  x2 = 0x%08x%08x\n", (uint32_t)(x2>>32), (uint32_t)(x2&0xffffffff));
-    m_printf("  x3 = 0x%08x%08x\n", (uint32_t)(x3>>32), (uint32_t)(x3&0xffffffff));
+    m_printf("Davros monitor version 0.3\n");
+    m_printf("... clearing bss\n");
+	p = &bss_start;
+	while ( p < &bss_end )
+	{
+		*p++ = 0;
+	}
+	if ( &mon_startaddr != &null_addr )
+	{
+    	m_printf("... clearing low memory\n");
+		p = &null_addr;
+		while ( p < &mon_startaddr )
+		{
+			*p++ = 0;
+		}
+	}
 
 	monitor("mon > ");
 }

@@ -1,0 +1,41 @@
+MEMORY
+{
+	ram : ORIGIN = 0, LENGTH = 0x100000	/* 1 MiB */
+}
+
+SECTIONS
+{
+	.reset	: {
+		*(reset)
+	} > ram
+    .text	: {
+		. = ALIGN(8);
+		*(.text*)
+	} > ram
+	.rodata	: {
+		. = ALIGN(8);
+		*(.rodata*)
+	} > ram
+	.data	: {
+		. = ALIGN(8);
+		*(.data*)
+	} > ram
+    .bss	: {
+		. = ALIGN(8);
+		bss_start = .;
+		*(.bss*)
+		. = ALIGN(8);
+		bss_end = .;
+	} > ram
+	.stack	: {
+		. = ALIGN(4096);
+		. += 4096;
+		c0_initialsp = .;
+		. += 4096;
+		c1_initialsp = .;
+		. += 4096;
+		c2_initialsp = .;
+		. += 4096;
+		c3_initialsp = .;
+	} > ram
+}
