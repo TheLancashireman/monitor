@@ -146,13 +146,13 @@ mon_reset:
 	cbz		x6, core_three
 
 stop:								/* Other cores (if any) wait here forever - the demo doesn't need them */
+	wfi
 	b		stop
 
 /* Core 0 - go to core0_start
 */
 core_zero:
-	ldr		x0, c0_sp_addr			/* Load the kernel stack pointer */
-	ldr		x1, [x0]
+	ldr		x1, c0_sp_addr			/* Load the kernel stack pointer */
 	mov		sp, x1
 	bl		core0_start
 	b		mon_reset				/* if the core start function returns, rinse and repeat. */
@@ -160,22 +160,19 @@ core_zero:
 /* Cores 1, 2 and 3 - go to corex_start
 */
 core_one:
-	ldr		x0, c1_sp_addr			/* Load the core 1 stack pointer */
-	ldr		x1, [x0]
+	ldr		x1, c1_sp_addr			/* Load the core 1 stack pointer */
 	mov		sp, x1
 	bl		core1_start
 	b		mon_reset				/* if the core start function returns, rinse and repeat. */
 
 core_two:
-	ldr		x0, c2_sp_addr			/* Load the core 2 stack pointer */
-	ldr		x1, [x0]
+	ldr		x1, c2_sp_addr			/* Load the core 2 stack pointer */
 	mov		sp, x1
 	bl		core2_start
 	b		mon_reset				/* if the core start function returns, rinse and repeat. */
 
 core_three:
-	ldr		x0, c3_sp_addr			/* Load the core 3 stack pointer */
-	ldr		x1, [x0]
+	ldr		x1, c3_sp_addr			/* Load the core 3 stack pointer */
 	mov		sp, x1
 	bl		core3_start
 	b		mon_reset				/* if the core start function returns, rinse and repeat. */
