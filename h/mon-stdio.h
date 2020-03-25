@@ -41,4 +41,11 @@ static inline void m_writechar(char c)
 	bcm2835_uart_putc((int)c);
 }
 
+static inline void m_putc(char c)
+{
+	if ( c == '\n' )
+		bcm2835_uart_putc((int)'\r');
+	bcm2835_uart_putc((int)c);
+}
+
 #endif

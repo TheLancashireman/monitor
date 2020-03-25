@@ -246,7 +246,9 @@ static int m_xprintf
 				if ( sign )
 					m_writechar('-');
 				for ( i=0; i<len; i++ )
-					m_writechar(*str++);
+				{
+					m_putc(*str++);
+				}
 				if ( ljust )
 				{
 					for ( i=0; i<leading; i++ )
@@ -256,7 +258,7 @@ static int m_xprintf
 		}
 		else
 		{
-			m_writechar(ch);
+			m_putc(ch);
 			nprinted++;
 		}
 	}
