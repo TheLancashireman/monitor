@@ -20,7 +20,7 @@ Commands (not case sensitive):
 [	Ma,s	- modify memory starting at a. Word size is s.    --- not implemented]
 	Ga		- call subroutine at address a
 
-Note: cores 1,2 and 3 can be released by poking a non-zero 32-bit address to
-20006000, 20004000 and 20002000. This causes a function call to the poked address, so
+Note: cores 1,2 and 3 can be released by poking a non-zero address to the appropriate
+release location, which is printed at startup.  This causes a function call to the poked address, so
 if the function returns, the core goes back to the spinning loop.
-No co-ordination for uart between monitor and loaded program, so output gets garbled.
+There is no co-ordination for uart between monitor and loaded program, so output gets garbled.

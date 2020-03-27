@@ -42,7 +42,9 @@ volatile fp_t core_start_addr[4];
 
 static inline void release_core(int c, uint32_t entry)
 {
+#if 0
 	m_printf("Release core %d at 0x%08x, rel_addr = 0x%08x\n", c, entry, (uint32_t)(uint64_t)&core_start_addr[c]);
+#endif
 	core_start_addr[c] = (fp_t)(uint64_t)entry;
 }
 
@@ -66,7 +68,7 @@ void core0_start(void)
 
 	/* Friendly greeting.
 	*/
-	m_printf("Loadhigh version 0.2!\n");
+	m_printf("Loadhigh version 0.3!\n");
 
 	/* Copy the data.
 	*/
@@ -78,21 +80,31 @@ void core0_start(void)
 	}
 	m_printf("Copied %u bytes to 0x%08x\n", bin_length, bin_loadaddr);
 
+#if 0
 	m_printf("Press RETURN to start each core in turn\n");
+#endif
 
 	/* Start the other cores.
 	*/
+#if 0
 	wait_return();
-	m_printf("Startingh core 1\n");
+#endif
+	m_printf("Starting core 1\n");
 	release_core(1, bin_loadaddr);
+#if 0
 	wait_return();
-	m_printf("Startingh core 2\n");
+#endif
+	m_printf("Starting core 2\n");
 	release_core(2, bin_loadaddr);
+#if 0
 	wait_return();
-	m_printf("Startingh core 3\n");
+#endif
+	m_printf("Starting core 3\n");
 	release_core(3, bin_loadaddr);
+#if 0
 	wait_return();
-	m_printf("Startingh core 0\n");
+#endif
+	m_printf("Starting core 0\n");
 	fp_t x = (fp_t)(uint64_t)bin_loadaddr;
 	x();
 	m_printf("Oops! Loaded program returned!\n");

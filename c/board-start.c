@@ -26,6 +26,14 @@ typedef int (*fp_t)(int);
 
 volatile fp_t core_start_addr[4];
 
+static void print_release_address(int c)
+{
+	uint64_t a = (uint64_t)&core_start_addr[c];
+	uint32_t ah = (uint32_t)((a >> 32) & 0xffffffff);
+	uint32_t al = (uint32_t)(a & 0xffffffff);
+	m_printf("Release address for core %d : 0x%08x%08x\n", c, ah, al);
+}
+
 void core0_start(void)
 {
 	uint64_t *p;
@@ -37,7 +45,7 @@ void core0_start(void)
 
     /* Friendly greeting.
     */
-    m_printf("Davros monitor version 0.3\n");
+    m_printf("Davros monitor version 0.4\n");
     m_printf("... clearing bss\n");
 	p = &bss_start;
 	while ( p < &bss_end )
@@ -54,6 +62,10 @@ void core0_start(void)
 		}
 	}
 
+	print_release_address(1);
+	print_release_address(2);
+	print_release_address(3);
+
 	monitor("mon > ");
 }
 
@@ -67,6 +79,8 @@ void core_start(int c)
 		{
 			int r = core_start_addr[c](c);
 			m_printf("Core %d: start function returned %d\n", c, r);
+
+			core_start_addr[c] = NULL;
 		}
 	}
 }
