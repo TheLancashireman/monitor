@@ -25,12 +25,17 @@
  *		Ba		- display value of byte at location a
  *		Ha		- display value of 16-bit word at location a
  *		Wa		- display value of 32-bit word at location a
+ *		Qa		- display value of 32-bit word at location a
  *		Ba=v	- set byte at location a to v
  *		Ha=v	- set 16-bit word at location a to v
  *		Wa=v	- set 32-bit word at location a to v
+ *		Qa=v	- set 64-bit word at location a to v
  *		Da,l,s	- dump l words memory starting at a. Word size is s.
- *		Ma,s	- modify memory starting at a. Word size is s.
- *		Ga		- call subroutine at address a
+ *		Ma,s	- modify memory starting at a. Word size is s.  [not implemented]
+ *		Zs,e	- clear (write zero to) all memory locations a, where s <= a < e
+ *		Ga		- call subroutine at address a on all cores
+ *		Ga,c	- call subroutine at address a on core c (0 <= c <= 3)
+ *		?		- print help text
  *
  *  Requires architecture-dependent functions or macros:
  *
@@ -43,12 +48,15 @@
  *		uint8_t peek8(memaddr_t a) - returns the byte at address a.
  *		uint16_t peek16(memaddr_t a) - returns the 16-bit word at address a.
  *		uint32_t peek32(memaddr_t a) - returns the 32-bit word at address a.
+ *		uint64_t peek64(memaddr_t a) - returns the 64-bit word at address a.
  *
  *		void poke8(memaddr_t a, uint8_t v) - set the byte of memory at address a to v.
  *		void poke16(memaddr_t a, uint16_t v) - set the 16-bit word of memory at address a to v.
  *		void poke32(memaddr_t a, uint32_t v) - set the 32-bit word of memory at address a to v.
+ *		void poke64(memaddr_t a, uint64_t v) - set the 64-bit word of memory at address a to v.
  *
  *		void go(memaddr_t a) - calls subroutine at a
+ *		void release(int c, memaddr_t a) - release a core (1..3) at address a
  *
  *		ADDRSIZE - size of an address, in bits.
  *
@@ -63,9 +71,11 @@ const char sorry[]		= "Sorry :-(";
 
 /*	Local functions */
 static void word_op(int s, char *p);
+static void dump_op(char *p);
+static void mod_op(char *p);
 static void go_op(char *p);
-static void dump(char *p);
-static void modify(char *p);
+static void zero_op(char *p);
+static void help(void);
 
 #ifdef poke8	/* If poke8 is a macro, we can't pass it to process_s_record */
 static void mypoke(memaddr_t a, uint8_t b)
@@ -81,6 +91,8 @@ char line[MAXLINE+2];
 void monitor(char *prompt)
 {
 	char *p;
+
+	help();
 
 	for (;;)
 	{
@@ -136,12 +148,12 @@ void monitor(char *prompt)
 
 		case 'd':
 		case 'D':
-			dump(p+1);
+			dump_op(p+1);
 			break;
 
 		case 'm':
 		case 'M':
-			modify(p+1);
+			mod_op(p+1);
 			break;
 
 		case 'g':
@@ -149,17 +161,41 @@ void monitor(char *prompt)
 			go_op(p+1);
 			break;
 
-#if 0
-		case 'q':
-		case 'Q':
-			return;
-#endif
+		case 'z':
+		case 'Z':
+			zero_op(p+1);
+			break;
+
+		case '?':
+			help();
+			break;
 
 		default:
 			m_printf("%s\n", what);
 			break;
 		}
 	}
+}
+
+static void help(void)
+{
+	m_printf("    Sn....  - Type n S-Record\n");
+	m_printf("    Ba      - display value of byte at location a\n");
+	m_printf("    Ha      - display value of 16-bit word at location a\n");
+	m_printf("    Wa      - display value of 32-bit word at location a\n");
+	m_printf("    Qa      - display value of 64-bit word at location a\n");
+	m_printf("    Ba=v    - set byte at location a to v\n");
+	m_printf("    Ha=v    - set 16-bit word at location a to v\n");
+	m_printf("    Wa=v    - set 32-bit word at location a to v\n");
+	m_printf("    Qa=v    - set 64-bit word at location a to v\n");
+	m_printf("    Da,l,s  - dump l words memory starting at a. Word size is s.\n");
+#if 0
+	m_printf("    Ma,s    - modify memory starting at a. Word size is s.\n");
+#endif
+	m_printf("    Ga      - call subroutine at address a on all cores\n");
+	m_printf("    Ga,c    - call subroutine at address a on core c\n");
+	m_printf("    Zs,e    - zero memory all memory locations a, where s <= a < e\n");
+	m_printf("    ?       - show this help text\n");
 }
 
 static void word_op(int s, char *p)
@@ -172,62 +208,68 @@ static void word_op(int s, char *p)
 	if ( p == NULL )
 	{
 		m_printf("%s\n", how);
+		return;
+	}
+
+	if ( (a & (s-1)) != 0 )
+	{
+		/* Misaligned
+		*/
+		m_printf("%s\n", how);
+		return;
+	}
+
+	p = m_skipspaces(p);
+	if ( *p == '\0' )
+	{
+		switch ( s )
+		{
+		case 1:
+			m_printf("%08x = %02x\n", a, peek8(a) & 0xff);
+			break;
+		case 2:
+			m_printf("%08x = %04x\n", a, peek16(a) & 0xffff);
+			break;
+		case 4:
+			m_printf("%08x = %08x\n", a, peek32(a) & 0xffffffff);
+			break;
+		case 8:
+			m_printf("%08x = %016x\n", a, peek64(a));
+			break;
+		}
 	}
 	else
+	if ( *p == '=' )
 	{
-		p = m_skipspaces(p);
-		if ( *p == '\0' )
+		p = m_skipspaces(p+1);
+		v = gethex(&p, s*2);
+		if ( p == NULL ||
+			 *(p = m_skipspaces(p)) != '\0' )
+		{
+			m_printf("%s\n", how);
+		}
+		else
 		{
 			switch ( s )
 			{
 			case 1:
-				m_printf("%08x = %02x\n", a, peek8(a));
+				poke8(a, v);
 				break;
 			case 2:
-				m_printf("%08x = %04x\n", a, peek16(a));
+				poke16(a, v);
 				break;
 			case 4:
-				m_printf("%08x = %08x\n", a, peek32(a));
+				poke32(a, v);
 				break;
 			case 8:
-				v = peek64(a);
-				m_printf("%08x = %08x%08x\n", a, (uint32_t)(v>>32), (uint32_t)(v&0xffffffff));
+				poke64(a, v);
 				break;
-			}
-		}
-		else
-		if ( *p == '=' )
-		{
-			p = m_skipspaces(p+1);
-			v = gethex(&p, s*2);
-			if ( p == NULL ||
-				 *(p = m_skipspaces(p)) != '\0' )
-			{
-				m_printf("%s\n", how);
-			}
-			else
-			{
-				switch ( s )
-				{
-				case 1:
-					poke8(a, v);
-					break;
-				case 2:
-					poke16(a, v);
-					break;
-				case 4:
-					poke32(a, v);
-					break;
-				case 8:
-					poke64(a, v);
-					break;
-				}
 			}
 		}
 	}
 }
 
-void dump(char *p)
+void dump_op(char *p)
 {
 	memaddr_t a, ca;
 	int l = 16;
@@ -274,8 +316,16 @@ void dump(char *p)
 		return;
 	}
 
-	if ( !(s == 1 || s == 2 || s == 4) )
+	if ( !(s == 1 || s == 2 || s == 4 || s == 8) )
 	{
+		m_printf("%s\n", sorry);
+		return;
+	}
+
+	if ( (a & (s-1)) != 0 )
+	{
+		/* Misaligned
+		*/
 		m_printf("%s\n", sorry);
 		return;
 	}
@@ -300,6 +350,9 @@ void dump(char *p)
 			case 4:
 				m_printf(" %08x", peek32(a));
 				break;
+			case 8:
+				m_printf(" %016lx", peek64(a));
+				break;
 			}
 			a += s;
 			i -= s;
@@ -320,14 +373,16 @@ void dump(char *p)
 	}
 }
 
-void modify(char *p)
+void mod_op(char *p)
 {
 	/* FIXME - to do */
+	m_printf("Not implemented\n");
 }
 
 void go_op(char *p)
 {
 	memaddr_t a;
+	int c = -1;
 
 	p = m_skipspaces(p);
 	a = gethex(&p, sizeof(memaddr_t)*2);
@@ -335,9 +390,108 @@ void go_op(char *p)
 	if ( p == NULL )
 	{
 		m_printf("%s\n", how);
+		return;
+	}
+
+	if ( *p == ',' )
+	{
+		p = m_skipspaces(p+1);
+		c = gethex(&p, 1);
+		if ( p == NULL )
+		{
+			m_printf("%s\n", how);
+			return;
+		}
+		if ( *p != '\0' )
+		{
+			m_printf("%s\n", how);
+			return;
+		}
+		if ( c < 0 || c > 3 )
+		{
+			m_printf("%s\n", sorry);
+			return;
+		}
+
+		if ( c ==  0 )
+			go(a);
+		else
+			release(c, a);
 	}
 	else
 	{
+		release(1, a);
+		release(2, a);
+		release(3, a);
 		go(a);
+	}
+}
+
+void zero_op(char *p)
+{
+	memaddr_t s, e=0, l;
+
+	p = m_skipspaces(p);
+	s = gethex(&p, sizeof(memaddr_t)*2);
+
+	if ( p == NULL )
+	{
+		m_printf("%s\n", how);
+		return;
+	}
+
+	p = m_skipspaces(p);
+	if ( *p == ',' )
+	{
+		p = m_skipspaces(p+1);
+		e = gethex(&p, sizeof(memaddr_t)*2);
+		if ( p == NULL )
+		{
+			m_printf("%s\n", how);
+			return;
+		}
+		p = m_skipspaces(p);
+		if ( p == NULL )
+		{
+			m_printf("%s\n", how);
+			return;
+		}
+	}
+
+	if ( *p != '\0' )
+	{
+		m_printf("%s\n", how);
+		return;
+	}
+
+	if ( s > e )
+	{
+		m_printf("%s\n", how);
+		return;
+	}
+
+	l = e & ~0x7; /* The limit for 64-bit words */
+
+	if ( s < l )
+	{
+		while ( (s & 0x07) != 0 )
+		{
+			poke8(s, 0);
+			s++;
+		}
+
+		/* s is now aligned to 64-bit word */
+
+		while ( s < l )
+		{
+			poke64(s, 0);
+			s += 8;
+		}
+	}
+
+	while ( s < e )
+	{
+		poke8(s, 0);
+		s++;
 	}
 }

@@ -34,6 +34,11 @@ static void print_release_address(int c)
 	m_printf("Release address for core %d : 0x%08x%08x\n", c, ah, al);
 }
 
+void release(int c, memaddr_t a)
+{
+	core_start_addr[c] = (fp_t) a;
+}
+
 void core0_start(void)
 {
 	uint64_t *p;
@@ -45,7 +50,7 @@ void core0_start(void)
 
     /* Friendly greeting.
     */
-    m_printf("Davros monitor version 0.4\n");
+    m_printf("Davros monitor version 0.5\n");
     m_printf("... clearing bss\n");
 	p = &bss_start;
 	while ( p < &bss_end )

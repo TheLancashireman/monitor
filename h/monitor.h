@@ -84,6 +84,7 @@ typedef void (*vfuncv_t)(void);
 #endif
 
 #define go(a)			((*(vfuncv_t)(a))())
+extern void release(int c, memaddr_t a);
 
 extern void monitor(char *prompt);
 extern int process_s_record(char *line, pokefunc_t _poke);

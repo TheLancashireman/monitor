@@ -114,6 +114,7 @@ static int m_xprintf
 	int i, leading;
 	int nprinted;
 	long num;
+	unsigned long unum;
 
 	nprinted = 0;
 
@@ -202,24 +203,38 @@ static int m_xprintf
 					break;
 
 				case 'd':
-				case 'u':
-				case 'x':
-				case 'X':
 					if ( longarg )
 						num = va_arg(ap, long);
 					else
+					{
 						num = va_arg(ap, int);
-					if ( ch == 'd' && num < 0 )
+					}
+					if ( num < 0 )
 					{
 						sign = 1;
 						num = -num;
 					}
+					unum = (uint64_t)num;
 					if ( !longarg )
-						num = (long)(int)num;
-					if ( ch == 'd' || ch == 'u' )
-						str = prt10(num, str);
+						unum &= (uint64_t)0xffffffff;
+					str = prt10(unum, str);
+					break;
+
+				case 'u':
+				case 'x':
+				case 'X':
+					if ( longarg )
+						unum = va_arg(ap, uint64_t);
 					else
-						str = prt16(num, str, ch=='x' ? "abcdef" : "ABCDEF");
+					{
+						unum = va_arg(ap, uint32_t);
+					}
+					if ( !longarg )
+						unum &= (uint64_t)0xffffffff;
+					if ( ch == 'u' )
+						str = prt10(unum, str);
+					else
+						str = prt16(unum, str, ch=='x' ? "abcdef" : "ABCDEF");
 					break;
 
 				default:
