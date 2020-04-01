@@ -25,11 +25,11 @@ Commands (not case sensitive):
 * E       - turn character echo and prompt back on
 * ?       - print help text
 
-Note:
+# Notes
 
-# The S0 record turns off the prompt and character echo to allow download to proceed faster. S7/8/9 turn it
+* The S0 record turns off the prompt and character echo to allow download to proceed faster. S7/8/9 turn it
 back on again. If the transfer gets interrupted or the s-rec file has no terminator record, use the E command.
-# Cores 1,2 and 3 can also be released by poking a non-zero address to the appropriate
+* Cores 1,2 and 3 can also be released by poking a non-zero address to the appropriate
 release location, which is printed at startup.  This causes a function call to the poked address, so
 if the function returns, the core goes back to the spinning loop.
-# There is no co-ordination for uart between monitor and loaded program, so output gets garbled.
+* There is no co-ordination for uart between monitor and loaded program, so output gets garbled.
