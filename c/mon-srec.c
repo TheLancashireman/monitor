@@ -33,9 +33,12 @@
  *
  * Return codes:
  *	0	  -	OK
- *	1	  - EOF (S9) record found
+ *	1	  - EOF (S9/8/7) record found
  *  <0	  - Bad S-Record
 */
+
+int good_count = 0;
+int bad_count = 0;
 
 int process_s_record(char *line, pokefunc_t _poke)
 {
@@ -65,6 +68,7 @@ int process_s_record(char *line, pokefunc_t _poke)
 			 (slen = gethex(&p, 2)) < 3 ||
 			 len < 2*slen+4 )
 		{
+			bad_count++;
 			return(SREC_BADLEN);
 		}
 		ck = slen;
@@ -73,10 +77,14 @@ int process_s_record(char *line, pokefunc_t _poke)
 			if ( m_isxdigit(*p) && m_isxdigit(*(p+1)) )
 				ck += gethex(&p, 2);
 			else
+			{
+				bad_count++;
 				return(SREC_NONHEX);
+			}
 		}
 		if ( (ck & 0xff) != 0xff )
 		{
+			bad_count++;
 			return(SREC_BADCK);
 		}
 		p = &line[4];
@@ -93,13 +101,27 @@ int process_s_record(char *line, pokefunc_t _poke)
 		}
 		break;
 
+	case '5':	/* Optional count records - ignore */
+	case '6':
+		break;
+
+	case '7':	/* Termination records */
+	case '8':
 	case '9':
+		good_count++;
 		return(SREC_EOF);
 		break;
 
+	case '0':	/* Start of file */
+		good_count = bad_count = 0;
+		break;
+
 	default:
+		bad_count++;
 		return(SREC_BADTYP);
 		break;
 	}
+
+	good_count++;
 	return(0);
 }

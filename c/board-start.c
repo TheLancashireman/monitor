@@ -50,7 +50,7 @@ void core0_start(void)
 
     /* Friendly greeting.
     */
-    m_printf("Davros monitor version 0.5\n");
+    m_printf("Davros monitor version 0.6\n");
     m_printf("... clearing bss\n");
 	p = &bss_start;
 	while ( p < &bss_end )

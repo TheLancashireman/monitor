@@ -71,6 +71,9 @@ typedef void (*vfuncv_t)(void);
 #define SREC_NONHEX		(-3)
 #define SREC_BADCK		(-4)
 
+extern int good_count;
+extern int bad_count;
+
 #define	peek8(a)		(*(uint8_t *)(a))
 #define	peek16(a)		(*(uint16_t *)(a))
 #define	peek32(a)		(*(uint32_t *)(a))

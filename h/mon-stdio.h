@@ -30,6 +30,7 @@
 
 extern int m_printf(char *fmt, ...);
 extern char *m_gets(char *buf, int max);
+extern int m_echo;
 
 static inline char m_readchar(void)
 {

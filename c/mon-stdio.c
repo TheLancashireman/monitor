@@ -40,6 +40,8 @@ static int isreturn(char c)
 
 static int m_xprintf(const char *fmt, va_list ap);
 
+int m_echo;
+
 extern memaddr_t GetSP(void);
 
 char *m_gets(char *buf, int max)
@@ -59,9 +61,12 @@ char *m_gets(char *buf, int max)
 				i--;
 				p--;
 				*p = '\0';
-				m_writechar(BS);
-				m_writechar(' ');
-				m_writechar(BS);
+				if ( m_echo )
+				{
+					m_writechar(BS);
+					m_writechar(' ');
+					m_writechar(BS);
+				}
 			}
 			else
 				m_writechar(BEL);
@@ -69,7 +74,8 @@ char *m_gets(char *buf, int max)
 		else
 		if ( i < max && c >= ' ' && c < 0x7f )
 		{
-			m_writechar(c);
+			if ( m_echo )
+				m_writechar(c);
 			*p++ = c;
 			*p = '\0';
 			i++;
@@ -78,8 +84,11 @@ char *m_gets(char *buf, int max)
 			m_writechar(BEL);
 	}
 	*p = '\0';
-	m_writechar('\r');
-	m_writechar('\n');
+	if ( m_echo )
+	{
+		m_writechar('\r');
+		m_writechar('\n');
+	}
 	return(buf);
 }
 

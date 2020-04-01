@@ -35,6 +35,8 @@
  *		Zs,e	- clear (write zero to) all memory locations a, where s <= a < e
  *		Ga		- call subroutine at address a on all cores
  *		Ga,c	- call subroutine at address a on core c (0 <= c <= 3)
+ *		I       - print some info about no of s-records etc.
+ *		E		- turn character echo and prompt back on
  *		?		- print help text
  *
  *  Requires architecture-dependent functions or macros:
@@ -75,6 +77,7 @@ static void dump_op(char *p);
 static void mod_op(char *p);
 static void go_op(char *p);
 static void zero_op(char *p);
+static void info(void);
 static void help(void);
 
 #ifdef poke8	/* If poke8 is a macro, we can't pass it to process_s_record */
@@ -92,11 +95,14 @@ void monitor(char *prompt)
 {
 	char *p;
 
+	m_echo = 1;
+
 	help();
 
 	for (;;)
 	{
-		m_printf("%s", prompt);
+		if ( m_echo )
+			m_printf("%s", prompt);
 		m_gets(line, MAXLINE);
 		p = m_skipspaces(line);
 		switch ( *p )
@@ -110,9 +116,11 @@ void monitor(char *prompt)
 			switch ( process_s_record(p, mypoke) )
 			{
 			case 0:		/* OK - no message */
+				m_echo = 0;
 				break;
 
 			case SREC_EOF:
+				m_echo = 1;
 				m_printf("End of S-record file\n");
 				break;
 
@@ -166,7 +174,17 @@ void monitor(char *prompt)
 			zero_op(p+1);
 			break;
 
-		case '?':
+		case 'e':		/* Rest of line ignored */
+		case 'E':
+			m_echo = 1;
+			break;
+
+		case 'i':		/* Rest of line ignored */
+		case 'I':
+			info();
+			break;
+
+		case '?':		/* Rest of line ignored */
 			help();
 			break;
 
@@ -175,6 +193,13 @@ void monitor(char *prompt)
 			break;
 		}
 	}
+}
+
+static void info(void)
+{
+	m_printf("Download information\n");
+	m_printf("    No. of good S-records : %d\n", good_count);
+	m_printf("    No. of bad S-records  : %d\n", bad_count);
 }
 
 static void help(void)
@@ -195,6 +220,8 @@ static void help(void)
 	m_printf("    Ga      - call subroutine at address a on all cores\n");
 	m_printf("    Ga,c    - call subroutine at address a on core c\n");
 	m_printf("    Zs,e    - zero memory all memory locations a, where s <= a < e\n");
+	m_printf("    I       - print some info about no of s-records etc.\n");
+	m_printf("    E       - re-enable echo (after an incomplete S-record transfer)\n");
 	m_printf("    ?       - show this help text\n");
 }
 
